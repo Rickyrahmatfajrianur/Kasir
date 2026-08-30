@@ -5,141 +5,257 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Taniku Kasir</title>
 <style>
+  :root {
+    --primary: #1470E0;
+    --primary-dark: #0F5BC0;
+    --primary-tint: #EAF2FD;
+    --accent: #1C9F4A;
+    --accent-tint: #E7F6EC;
+    --warning: #B4552D;
+    --warning-tint: #F7E9E1;
+    --bg: #F3F5F9;
+    --surface: #FFFFFF;
+    --border: #E6E9EF;
+    --text: #16181D;
+    --text-secondary: #5B6270;
+    --text-muted: #9AA1AC;
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,0.04);
+    --shadow-md: 0 4px 14px rgba(16,24,40,0.08);
+    --shadow-lift: 0 10px 24px rgba(20,112,224,0.14);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #F4F6F9;
-    color: #1A1D23;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
   }
+  button, input { font-family: inherit; }
   .app { height: 100vh; display: flex; flex-direction: column; }
+
+  /* ---------- Top bar ---------- */
   .topbar {
-    padding: 14px 24px;
-    background: #FFFFFF;
-    border-bottom: 1px solid #E3E7EE;
+    padding: 14px 26px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    z-index: 5;
   }
-  .topbar .brand { font-weight: 600; font-size: 17px; color: #1470E0; }
+  .brand-wrap { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .brand-mark svg { width: 17px; height: 17px; }
+  .brand { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; color: var(--text); }
+  #screen-subtitle { font-size: 12px; color: var(--text-muted); display: block; margin-top: 1px; }
+
   .topbar-right { display: flex; align-items: center; gap: 10px; }
   .status {
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 7px;
+    cursor: pointer; padding: 7px 14px; border-radius: 20px;
+    transition: transform .12s ease, box-shadow .15s ease;
+    border: 1px solid transparent;
   }
-  .status.online { color: #1C9F4A; background: #E7F6EC; }
-  .status.offline { color: #B4552D; background: #F7E9E1; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .status:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .status.online { color: var(--accent); background: var(--accent-tint); }
+  .status.offline { color: var(--warning); background: var(--warning-tint); }
+  .status svg { width: 13px; height: 13px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .dot.pulse { animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
   .icon-btn {
-    width: 34px; height: 34px;
-    border-radius: 8px;
-    border: 1px solid #E3E7EE;
-    background: #FFFFFF;
-    cursor: pointer;
-    font-size: 16px;
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+    transition: border-color .15s ease, color .15s ease, transform .12s ease;
   }
-  .icon-btn:hover { border-color: #1470E0; }
+  .icon-btn svg { width: 17px; height: 17px; }
+  .icon-btn:hover { border-color: var(--primary); color: var(--primary); transform: rotate(20deg); }
 
+  /* ---------- Layout ---------- */
   .body-area { flex: 1; display: flex; overflow: hidden; }
-  .nav { width: 84px; background: #FFFFFF; border-right: 1px solid #E3E7EE; display: flex; flex-direction: column; padding-top: 16px; }
-  .nav-item { text-align: center; padding: 12px 0; font-size: 11px; color: #9AA1AC; cursor: pointer; border-left: 3px solid transparent; }
-  .nav-item.active { color: #1470E0; border-left: 3px solid #1470E0; background: #EAF2FD; font-weight: 600; }
-  .nav-icon { font-size: 20px; display: block; margin-bottom: 3px; }
+  .nav {
+    width: 88px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 18px;
+  }
+  .nav-item {
+    width: 68px; text-align: center; padding: 10px 0; border-radius: var(--radius-md);
+    font-size: 11px; color: var(--text-muted); cursor: pointer; font-weight: 500;
+    transition: background .15s ease, color .15s ease, transform .12s ease;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text-secondary); }
+  .nav-item.active { color: var(--primary); background: var(--primary-tint); font-weight: 700; }
+  .nav-item.active svg { transform: scale(1.05); }
+  .nav-icon { display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .nav-icon svg { width: 21px; height: 21px; transition: transform .15s ease; }
 
-  .screen { display: none; flex: 1; overflow: auto; padding: 20px 24px; }
-  .screen.active { display: flex; gap: 20px; }
+  .screen { display: none; flex: 1; overflow: auto; padding: 22px 26px; }
+  .screen.active { display: flex; gap: 20px; animation: fadeIn .28s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+  /* ---------- Penjualan ---------- */
   .products-col { flex: 1.4; display: flex; flex-direction: column; min-width: 0; }
   .cart-col {
-    flex: 1; max-width: 340px; background: #FFFFFF;
-    border: 1px solid #E3E7EE; border-radius: 14px; padding: 18px;
+    flex: 1; max-width: 350px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px;
     display: flex; flex-direction: column; height: fit-content;
+    box-shadow: var(--shadow-md);
   }
 
   input[type="text"], input[type="number"] {
-    height: 42px; border: 1px solid #D8DEE7; border-radius: 10px;
-    padding: 0 14px; font-size: 14px; background: #FFFFFF; font-family: inherit;
+    height: 44px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 0 14px; font-size: 14px; background: var(--surface); color: var(--text);
+    transition: border-color .15s ease, box-shadow .15s ease;
   }
-  #search-input { width: 100%; padding-left: 40px; margin-bottom: 14px;
+  input[type="text"]:focus, input[type="number"]:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint);
+  }
+  #search-input {
+    width: 100%; padding-left: 42px; margin-bottom: 14px;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="%239AA1AC" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>');
-    background-repeat: no-repeat; background-position: 12px center; }
+    background-repeat: no-repeat; background-position: 14px center;
+  }
 
   .categories { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .category-chip { padding: 6px 13px; border-radius: 20px; border: 1px solid #D8DEE7; font-size: 13px; color: #5B6270; cursor: pointer; background: #FFFFFF; }
-  .category-chip.active { background: #1470E0; border-color: #1470E0; color: #FFFFFF; font-weight: 500; }
-  .section-label { font-size: 12px; color: #9AA1AC; margin-bottom: 10px; }
+  .category-chip {
+    padding: 7px 15px; border-radius: 20px; border: 1.5px solid var(--border);
+    font-size: 13px; color: var(--text-secondary); cursor: pointer; background: var(--surface);
+    transition: all .15s ease;
+  }
+  .category-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .category-chip.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+  .section-label { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
 
-  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; overflow-y: auto; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; overflow-y: auto; align-content: start; }
   .product-card {
-    background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 12px; padding: 14px;
-    cursor: pointer; position: relative; transition: border-color .15s, box-shadow .15s;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 15px;
+    cursor: pointer; position: relative; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
   }
-  .product-card:hover { border-color: #1470E0; box-shadow: 0 2px 8px rgba(20,112,224,0.1); }
+  .product-card:hover { border-color: var(--primary); box-shadow: var(--shadow-lift); transform: translateY(-3px); }
+  .product-card:active { transform: translateY(-1px) scale(.98); }
   .product-card.disabled { opacity: .5; cursor: not-allowed; }
-  .product-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
-  .product-stock { font-size: 12px; color: #9AA1AC; margin-bottom: 8px; }
-  .product-stock.low { color: #B4552D; }
-  .product-price { font-size: 15px; font-weight: 600; color: #1C9F4A; }
+  .product-card.disabled:hover { transform: none; box-shadow: none; border-color: var(--border); }
+  .product-name { font-size: 14px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+  .product-stock { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .product-stock.low { color: var(--warning); font-weight: 500; }
+  .product-price { font-size: 15px; font-weight: 700; color: var(--accent); }
   .add-flash {
-    position: absolute; top: 10px; right: 10px; background: #1C9F4A; color: #fff;
-    font-size: 11px; padding: 3px 8px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none;
+    position: absolute; top: -8px; right: -8px; background: var(--accent); color: #fff;
+    width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(.5); transition: opacity .2s ease, transform .2s ease; pointer-events: none;
+    box-shadow: var(--shadow-md);
   }
-  .add-flash.show { opacity: 1; }
-  .empty-note { color: #9AA1AC; padding: 30px; text-align: center; grid-column: 1 / -1; }
+  .add-flash.show { opacity: 1; transform: scale(1); }
+  .add-flash svg { width: 13px; height: 13px; }
+  .empty-note { color: var(--text-muted); padding: 40px 20px; text-align: center; grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 13px; }
+  .empty-note svg { width: 34px; height: 34px; opacity: .5; }
 
-  .cart-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-  .cart-count { font-size: 12px; color: #FFFFFF; background: #1470E0; padding: 2px 9px; border-radius: 10px; font-weight: 500; }
+  .cart-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .cart-count { font-size: 12px; color: #FFFFFF; background: var(--primary); padding: 2px 9px; border-radius: 10px; font-weight: 600; }
   .cart-lines { min-height: 50px; margin-bottom: 10px; max-height: 220px; overflow-y: auto; }
-  .cart-empty { color: #9AA1AC; padding: 12px 0; }
-  .cart-line { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 7px 0; border-bottom: 1px solid #EEF1F5; }
-  .cart-line-qty { display: flex; align-items: center; gap: 7px; }
-  .qty-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #D8DEE7; background: #fff; cursor: pointer; font-size: 13px; line-height: 1; }
-  .qty-btn:hover { border-color: #1470E0; color: #1470E0; }
-  .cart-subline { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; }
-  .cart-subline input { width: 100px; height: 30px; text-align: right; font-size: 13px; }
-  .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 600; border-top: 1px solid #E3E7EE; padding-top: 10px; margin: 4px 0 10px; }
-  .payment-block { border-top: 1px solid #E3E7EE; padding-top: 10px; }
-  .change-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: #1C9F4A; margin-top: 6px; }
-  .change-row.negative { color: #B4552D; }
-  .actions { display: flex; margin-top: 14px; }
+  .cart-empty { color: var(--text-muted); padding: 20px 0; text-align: center; font-size: 13px; }
+  .cart-line { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #F0F2F6; animation: slideIn .2s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: translateX(0); } }
+  .cart-line-qty { display: flex; align-items: center; gap: 8px; }
+  .qty-btn {
+    width: 23px; height: 23px; border-radius: 50%; border: 1.5px solid var(--border); background: #fff;
+    cursor: pointer; font-size: 13px; line-height: 1; color: var(--text-secondary);
+    transition: all .15s ease; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+  .cart-subline { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 9px; color: var(--text-secondary); }
+  .cart-subline input { width: 105px; height: 32px; text-align: right; font-size: 13px; }
+  .cart-total { display: flex; justify-content: space-between; align-items: baseline; font-size: 20px; font-weight: 700; border-top: 1px dashed var(--border); padding-top: 12px; margin: 4px 0 10px; }
+  .payment-block { border-top: 1px dashed var(--border); padding-top: 10px; }
+  .change-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: var(--accent); margin-top: 8px; }
+  .change-row.negative { color: var(--warning); }
+  .actions { display: flex; margin-top: 16px; }
   .btn-checkout {
-    width: 100%; height: 46px; border-radius: 10px; font-size: 14px; font-weight: 500;
-    background: #1470E0; color: #fff; border: none; cursor: pointer;
+    width: 100%; height: 48px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700;
+    background: var(--primary); color: #fff; border: none; cursor: pointer;
+    transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
+    box-shadow: 0 4px 12px rgba(20,112,224,0.25);
   }
-  .btn-checkout:disabled { background: #C7D6EE; cursor: not-allowed; }
+  .btn-checkout:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-checkout:active:not(:disabled) { transform: scale(.98); }
+  .btn-checkout:disabled { background: #D3E0F5; box-shadow: none; cursor: not-allowed; }
 
-  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
-  .metric-card { background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 14px; padding: 18px; }
-  .metric-label { font-size: 12px; color: #9AA1AC; margin-bottom: 6px; }
-  .metric-value { font-size: 24px; font-weight: 600; }
-  .metric-value.accent { color: #1C9F4A; }
-  .list-panel { background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 14px; padding: 6px 18px; overflow-y: auto; }
-  .list-head, .list-row { display: grid; grid-template-columns: 1.6fr 0.7fr 0.9fr 1fr; align-items: center; padding: 12px 0; font-size: 14px; border-bottom: 1px solid #EEF1F5; }
-  .list-head { font-size: 12px; color: #9AA1AC; }
+  /* ---------- Dashboard ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .metric-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px;
+    display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .metric-icon {
+    width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .metric-icon svg { width: 20px; height: 20px; }
+  .metric-icon.blue { background: var(--primary-tint); color: var(--primary); }
+  .metric-icon.green { background: var(--accent-tint); color: var(--accent); }
+  .metric-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+  .metric-value.accent { color: var(--accent); }
+
+  .list-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 6px 20px; overflow-y: auto; box-shadow: var(--shadow-sm); }
+  .list-head, .list-row { display: grid; grid-template-columns: 1.6fr 0.7fr 0.9fr 1fr; align-items: center; padding: 13px 0; font-size: 14px; border-bottom: 1px solid #F0F2F6; }
+  .list-head { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
   .list-row:last-child { border-bottom: none; }
-  .col-qty, .col-price { color: #9AA1AC; font-size: 13px; }
-  .col-total { text-align: right; font-weight: 600; }
+  .list-row:hover { background: #FAFBFD; }
+  .col-qty, .col-price { color: var(--text-muted); font-size: 13px; }
+  .col-total { text-align: right; font-weight: 700; }
 
+  /* ---------- Modals ---------- */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none;
-    align-items: center; justify-content: center; z-index: 50;
+    position: fixed; inset: 0; background: rgba(16,24,40,.45); display: none;
+    align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(2px);
   }
-  .modal { background: #fff; border-radius: 14px; padding: 22px; width: 340px; max-width: 90vw; }
-  .modal h3 { font-size: 16px; margin-bottom: 14px; }
-  .modal label { font-size: 12px; color: #5B6270; display: block; margin: 10px 0 4px; }
+  .modal-overlay.show { animation: overlayIn .18s ease; }
+  @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg); padding: 24px; width: 340px; max-width: 90vw;
+    box-shadow: 0 20px 50px rgba(16,24,40,.25); animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal h3 { font-size: 16px; margin-bottom: 14px; font-weight: 700; }
+  .modal label { font-size: 12px; color: var(--text-secondary); display: block; margin: 10px 0 4px; font-weight: 500; }
   .modal input { width: 100%; }
-  .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
-  .modal-actions button { flex: 1; height: 40px; border-radius: 8px; border: 1px solid #D8DEE7; background: #fff; cursor: pointer; font-size: 14px; }
-  .modal-actions button.primary { background: #1470E0; color: #fff; border: none; }
-  .modal-hint { font-size: 12px; color: #9AA1AC; margin-top: 12px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions button {
+    flex: 1; height: 42px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+    background: #fff; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    transition: all .15s ease;
+  }
+  .modal-actions button:hover { border-color: var(--text-muted); }
+  .modal-actions button.primary { background: var(--primary); color: #fff; border: none; }
+  .modal-actions button.primary:hover { background: var(--primary-dark); }
+  .modal-hint { font-size: 12px; color: var(--text-muted); margin-top: 14px; line-height: 1.5; }
 
-  #receipt-content { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.5; }
-  #receipt-content hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
+  #receipt-content { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; }
+  #receipt-content hr { border: none; border-top: 1px dashed #ccc; margin: 8px 0; }
+
+  /* ---------- Toast ---------- */
+  #toast-container { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+  .toast {
+    background: var(--text); color: #fff; padding: 12px 18px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(16,24,40,.25);
+    display: flex; align-items: center; gap: 8px;
+    animation: toastIn .25s ease, toastOut .25s ease 2.2s forwards;
+  }
+  .toast svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(-6px); } }
 
   @media print {
     body * { visibility: hidden; }
@@ -152,20 +268,32 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <span class="brand" id="screen-title">Penjualan</span>
+    <div class="brand-wrap">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c6-2 8-7 8-13a8 8 0 0 0-8 8 8 8 0 0 0-8-8c0 6 2 11 8 13Z"/><path d="M12 17V9"/></svg>
+      </div>
+      <div>
+        <span class="brand" id="screen-title">Penjualan</span>
+        <span id="screen-subtitle">Taniku Agro</span>
+      </div>
+    </div>
     <div class="topbar-right">
-      <span class="status offline" id="status-indicator" onclick="cobaSinkron()"><span class="dot"></span>Offline</span>
-      <button class="icon-btn" onclick="bukaPengaturan()" title="Pengaturan sinkronisasi">&#9881;</button>
+      <span class="status offline" id="status-indicator" onclick="cobaSinkron()">
+        <span class="dot"></span><span class="status-label">Offline</span>
+      </span>
+      <button class="icon-btn" onclick="bukaPengaturan()" title="Pengaturan sinkronisasi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
     </div>
   </div>
 
   <div class="body-area">
     <div class="nav">
       <div class="nav-item active" id="nav-penjualan" onclick="showScreen('penjualan')">
-        <span class="nav-icon">&#128722;</span>Penjualan
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>Penjualan
       </div>
       <div class="nav-item" id="nav-dashboard" onclick="showScreen('dashboard')">
-        <span class="nav-icon">&#9632;</span>Dashboard
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Dashboard
       </div>
     </div>
 
@@ -195,9 +323,18 @@
     <div class="screen" id="screen-dashboard">
       <div style="flex:1; display:flex; flex-direction:column;">
         <div class="metrics">
-          <div class="metric-card"><div class="metric-label">Transaksi</div><div class="metric-value" id="metric-transaksi">0</div></div>
-          <div class="metric-card"><div class="metric-label">Unit terjual</div><div class="metric-value" id="metric-unit">0</div></div>
-          <div class="metric-card"><div class="metric-label">Omzet</div><div class="metric-value accent" id="metric-omzet">Rp0</div></div>
+          <div class="metric-card">
+            <div class="metric-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div><div class="metric-label">Transaksi</div><div class="metric-value" id="metric-transaksi">0</div></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9m0 0-3-3m3 3-3 3M4 17h9m0 0-3 3m3-3-3-3"/></svg></div>
+            <div><div class="metric-label">Unit terjual</div><div class="metric-value" id="metric-unit">0</div></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div><div class="metric-label">Omzet</div><div class="metric-value accent" id="metric-omzet">Rp0</div></div>
+          </div>
         </div>
         <div class="section-label">Semua produk terjual hari ini</div>
         <div class="list-panel" id="dashboard-list"></div>
@@ -231,6 +368,8 @@
   </div>
 </div>
 
+<div id="toast-container"></div>
+
 <script>
   // ---------- Penyimpanan lokal ----------
   const DEFAULT_SETTINGS = {
@@ -257,6 +396,16 @@
   function escapeStr(s) { return s.replace(/'/g, "\\'"); }
   function slugId(nama) { return 'p_' + nama.replace(/[^a-zA-Z0-9]/g, '_'); }
 
+  // ---------- Toast ---------
+  function tampilkanToast(pesan) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>' + pesan + '</span>';
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+  }
+
   // ---------- Init ----------
   window.addEventListener('DOMContentLoaded', () => {
     renderProducts();
@@ -271,7 +420,9 @@
     const s = getSettings();
     document.getElementById('input-url').value = s.url || '';
     document.getElementById('input-key').value = s.key || '';
-    document.getElementById('settings-modal').style.display = 'flex';
+    const modal = document.getElementById('settings-modal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
   }
   function tutupPengaturan() { document.getElementById('settings-modal').style.display = 'none'; }
   function simpanPengaturan() {
@@ -300,7 +451,10 @@
   function setStatus(online) {
     const el = document.getElementById('status-indicator');
     el.className = 'status ' + (online ? 'online' : 'offline');
-    el.innerHTML = '<span class="dot"></span>' + (online ? 'Online' : 'Offline');
+    const icon = online
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>';
+    el.innerHTML = icon + '<span class="status-label">' + (online ? 'Online' : 'Offline') + '</span>';
   }
 
   async function tarikProduk() {
@@ -339,6 +493,7 @@
     document.getElementById('nav-penjualan').classList.toggle('active', name === 'penjualan');
     document.getElementById('nav-dashboard').classList.toggle('active', name === 'dashboard');
     document.getElementById('screen-title').textContent = name === 'penjualan' ? 'Penjualan' : 'Dashboard';
+    document.getElementById('screen-subtitle').textContent = name === 'penjualan' ? 'Taniku Agro' : 'Ringkasan hari ini';
     if (name === 'dashboard') renderDashboard();
   }
 
@@ -348,6 +503,7 @@
     const kategoriSet = ['Semua'];
     produk.forEach(p => { const k = p.kategori || 'Umum'; if (!kategoriSet.includes(k)) kategoriSet.push(k); });
     const container = document.getElementById('category-chips');
+    if (kategoriSet.length <= 1) { container.innerHTML = ''; return; }
     container.innerHTML = kategoriSet.map(kat =>
       `<div class="category-chip ${kat === currentCategory ? 'active' : ''}" onclick="pilihKategori('${escapeStr(kat)}')">${kat}</div>`
     ).join('');
@@ -365,14 +521,14 @@
 
     const grid = document.getElementById('product-grid');
     if (produk.length === 0) {
-      grid.innerHTML = '<div class="empty-note">Produk tidak ditemukan. Tambahkan produk lewat sheet "Daftar Produk" lalu sinkron.</div>';
+      grid.innerHTML = '<div class="empty-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Produk tidak ditemukan. Tambahkan lewat sheet "DAFTAR BARANG" lalu sinkron.</span></div>';
       return;
     }
     grid.innerHTML = produk.map(p => {
       const stokMenipis = p.stok <= 5;
       const habis = p.stok <= 0;
       return `<div class="product-card ${habis ? 'disabled' : ''}" ${habis ? '' : `onclick="tambahKeKeranjang('${escapeStr(p.nama)}', ${p.harga})"`}>
-        <span class="add-flash" id="${slugId(p.nama)}">+ ditambah</span>
+        <span class="add-flash" id="${slugId(p.nama)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         <div class="product-name">${p.nama}</div>
         <div class="product-stock ${stokMenipis ? 'low' : ''}">Stok: ${formatAngka(p.stok)} ${p.satuan || ''}${stokMenipis ? ' - menipis' : ''}</div>
         <div class="product-price">${formatRupiah(p.harga)}</div>
@@ -387,6 +543,7 @@
     renderCart();
     const flash = document.getElementById(slugId(nama));
     if (flash) { flash.classList.add('show'); setTimeout(() => flash.classList.remove('show'), 500); }
+    tampilkanToast(nama + ' ditambahkan');
   }
 
   function ubahQty(nama, delta) {
@@ -509,7 +666,9 @@
       '<div style="text-align:center;">Terima kasih</div>';
 
     document.getElementById('receipt-content').innerHTML = html;
-    document.getElementById('receipt-modal').style.display = 'flex';
+    const modal = document.getElementById('receipt-modal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
   }
   function tutupStruk() { document.getElementById('receipt-modal').style.display = 'none'; }
   function cetakStruk() { window.print(); }
@@ -541,7 +700,7 @@
     const namaProduk = Object.keys(produkMap).sort((a, b) => a.localeCompare(b));
     const listEl = document.getElementById('dashboard-list');
     if (namaProduk.length === 0) {
-      listEl.innerHTML = '<div class="empty-note">Belum ada transaksi hari ini</div>';
+      listEl.innerHTML = '<div class="empty-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Belum ada transaksi hari ini</span></div>';
       return;
     }
     listEl.innerHTML = '<div class="list-head"><span>Produk</span><span>Qty</span><span>Harga</span><span class="col-total">Total</span></div>' +
