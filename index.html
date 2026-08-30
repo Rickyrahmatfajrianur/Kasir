@@ -216,6 +216,35 @@
   .col-qty, .col-price { color: var(--text-muted); font-size: 13px; }
   .col-total { text-align: right; font-weight: 700; }
 
+  /* ---------- Riwayat ---------- */
+  .riwayat-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .riwayat-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-y: auto; box-shadow: var(--shadow-sm); }
+  .riwayat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid #F0F2F6; gap: 14px;
+  }
+  .riwayat-row:last-child { border-bottom: none; }
+  .riwayat-row.void { opacity: .55; }
+  .riwayat-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .riwayat-time { font-size: 12px; color: var(--text-muted); }
+  .riwayat-items { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .riwayat-total { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .status-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; white-space: nowrap; }
+  .status-badge.batal { background: var(--warning-tint); color: var(--warning); }
+  .btn-void {
+    font-size: 12px; font-weight: 600; color: var(--warning); background: var(--warning-tint);
+    border: none; padding: 8px 13px; border-radius: var(--radius-sm); cursor: pointer;
+    white-space: nowrap; transition: background .15s ease;
+  }
+  .btn-void:hover { background: #F0DACB; }
+  .void-reason-btn {
+    width: 100%; text-align: left; padding: 13px 16px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: #fff; cursor: pointer; margin-bottom: 10px;
+    font-size: 14px; font-weight: 500; color: var(--text); transition: all .15s ease;
+  }
+  .void-reason-btn:hover { border-color: var(--warning); background: var(--warning-tint); }
+  .void-reason-btn small { display: block; font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+
   /* ---------- Modals ---------- */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(16,24,40,.45); display: none;
@@ -309,6 +338,9 @@
       <div class="nav-item" id="nav-dashboard" onclick="showScreen('dashboard')">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Dashboard
       </div>
+      <div class="nav-item" id="nav-riwayat" onclick="showScreen('riwayat')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span>Riwayat
+      </div>
     </div>
 
     <div class="screen active" id="screen-penjualan">
@@ -322,6 +354,10 @@
       <div class="cart-col">
         <div class="cart-title"><span>Keranjang</span><span class="cart-count" id="cart-count" style="display:none;">0</span></div>
         <div class="cart-lines" id="cart-lines"><div class="cart-empty">Belum ada item</div></div>
+        <div class="cart-subline" style="flex-direction:column; align-items:stretch; gap:5px;">
+          <span>Nama pelanggan <span style="color:var(--text-muted); font-weight:400;">(opsional)</span></span>
+          <input type="text" id="customer-input" placeholder="Contoh: Pak Budi" style="width:100%;">
+        </div>
         <div class="cart-subline"><span>Diskon</span><input type="number" id="discount-input" placeholder="0" min="0" oninput="renderCart()"></div>
         <div class="cart-total"><span>Total</span><span id="cart-total">Rp0</span></div>
         <div class="payment-block">
@@ -354,6 +390,13 @@
         <div class="list-panel" id="dashboard-list"></div>
       </div>
     </div>
+
+    <div class="screen" id="screen-riwayat">
+      <div class="riwayat-col">
+        <div class="section-label">Transaksi hari ini</div>
+        <div class="riwayat-panel" id="riwayat-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -378,6 +421,24 @@
     <div class="modal-actions">
       <button onclick="tutupStruk()">Tutup</button>
       <button class="primary" onclick="cetakStruk()">Cetak struk</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="void-modal">
+  <div class="modal">
+    <h3>Batalkan transaksi</h3>
+    <div class="modal-hint" style="margin-top:0; margin-bottom:14px;">Pilih alasan pembatalan. Stok produk akan dikembalikan secara otomatis.</div>
+    <button class="void-reason-btn" onclick="konfirmasiBatal('kesalahan')">
+      Kesalahan input
+      <small>Salah catat produk, jumlah, atau harga</small>
+    </button>
+    <button class="void-reason-btn" onclick="konfirmasiBatal('retur')">
+      Retur dari pelanggan
+      <small>Barang dikembalikan setelah transaksi selesai</small>
+    </button>
+    <div class="modal-actions">
+      <button onclick="tutupVoidModal()">Batal</button>
     </div>
   </div>
 </div>
@@ -492,7 +553,7 @@
         const res = await fetch(s.url, {
           method: 'POST',
           headers: {'Content-Type': 'text/plain'},
-          body: JSON.stringify(Object.assign({}, trx, {key: s.key})),
+          body: JSON.stringify(Object.assign({}, trx, {key: s.key, status: trx.status_toko || 'LUNAS'})),
         });
         if (res.ok) { trx.status_sinkron = 'tersinkron'; berubah = true; }
       } catch (err) { /* coba lagi nanti */ }
@@ -504,11 +565,16 @@
   function showScreen(name) {
     document.getElementById('screen-penjualan').classList.toggle('active', name === 'penjualan');
     document.getElementById('screen-dashboard').classList.toggle('active', name === 'dashboard');
+    document.getElementById('screen-riwayat').classList.toggle('active', name === 'riwayat');
     document.getElementById('nav-penjualan').classList.toggle('active', name === 'penjualan');
     document.getElementById('nav-dashboard').classList.toggle('active', name === 'dashboard');
-    document.getElementById('screen-title').textContent = name === 'penjualan' ? 'Penjualan' : 'Dashboard';
-    document.getElementById('screen-subtitle').textContent = name === 'penjualan' ? 'Taniku Agro' : 'Ringkasan hari ini';
+    document.getElementById('nav-riwayat').classList.toggle('active', name === 'riwayat');
+    const judul = name === 'penjualan' ? 'Penjualan' : (name === 'dashboard' ? 'Dashboard' : 'Riwayat');
+    const subjudul = name === 'penjualan' ? 'Taniku Agro' : (name === 'dashboard' ? 'Ringkasan hari ini' : 'Transaksi hari ini');
+    document.getElementById('screen-title').textContent = judul;
+    document.getElementById('screen-subtitle').textContent = subjudul;
     if (name === 'dashboard') renderDashboard();
+    if (name === 'riwayat') renderRiwayat();
   }
 
   // ---------- Produk & pencarian ----------
@@ -632,6 +698,7 @@
     const trx = {
       id: 'trx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       waktu: new Date().toISOString(),
+      customer: document.getElementById('customer-input').value.trim(),
       subtotal: subtotal, diskon: diskon, total: total,
       uang_dibayar: dibayar, kembalian: kembalian,
       status_sinkron: 'belum_sinkron',
@@ -652,6 +719,7 @@
     tampilkanStruk(trx);
 
     cart = {};
+    document.getElementById('customer-input').value = '';
     document.getElementById('discount-input').value = '';
     document.getElementById('payment-input').value = '';
     renderCart();
@@ -665,7 +733,11 @@
     const waktuFormat = waktu.toLocaleDateString('id-ID') + ' ' + waktu.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
     let html = '<div style="text-align:center;font-weight:bold;">TANIKU AGRO</div>' +
       '<div style="text-align:center;">Ds. Rintik, Kec. Babulu, PPU</div><hr>' +
-      '<div>' + waktuFormat + '</div><hr>';
+      '<div>' + waktuFormat + '</div>';
+    if (trx.customer) {
+      html += '<div>Pelanggan: ' + trx.customer + '</div>';
+    }
+    html += '<hr>';
     trx.items.forEach(item => {
       html += '<div>' + item.nama_produk + '</div>' +
         '<div style="display:flex;justify-content:space-between;"><span>' + item.qty + ' x ' + formatRupiah(item.harga_satuan) + '</span><span>' + formatRupiah(item.subtotal) + '</span></div>';
@@ -692,7 +764,7 @@
     const list = getTransactions();
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayTrx = list.filter(t => new Date(t.waktu) >= startOfDay);
+    const todayTrx = list.filter(t => new Date(t.waktu) >= startOfDay && t.tipe !== 'void' && t.status !== 'dibatalkan');
 
     let omzet = 0;
     const produkMap = {};
@@ -722,6 +794,108 @@
         const p = produkMap[nama];
         return '<div class="list-row"><span>' + nama + '</span><span class="col-qty">' + formatAngka(p.qty) + '</span><span class="col-price">' + formatRupiah(p.harga) + '</span><span class="col-total">' + formatRupiah(p.total) + '</span></div>';
       }).join('');
+  }
+
+  // ---------- Riwayat & pembatalan/retur ----------
+  let trxDipilihUntukBatal = null;
+
+  function renderRiwayat() {
+    const list = getTransactions();
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayTrx = list
+      .filter(t => new Date(t.waktu) >= startOfDay && t.tipe !== 'void')
+      .sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+
+    const panel = document.getElementById('riwayat-list');
+    if (todayTrx.length === 0) {
+      panel.innerHTML = '<div class="empty-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span>Belum ada transaksi hari ini</span></div>';
+      return;
+    }
+
+    panel.innerHTML = todayTrx.map(trx => {
+      const waktu = new Date(trx.waktu);
+      const jam = waktu.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
+      const ringkasanItem = trx.items.map(i => i.qty + 'x ' + i.nama_produk).join(', ');
+      const infoPelanggan = trx.customer ? (' &middot; ' + trx.customer) : '';
+      const dibatalkan = trx.status === 'dibatalkan';
+      const labelAlasan = trx.alasan_batal === 'retur' ? 'Retur' : 'Dibatalkan';
+
+      return `<div class="riwayat-row ${dibatalkan ? 'void' : ''}">
+        <div class="riwayat-info">
+          <span class="riwayat-time">${jam}</span>
+          <span class="riwayat-items">${ringkasanItem}${infoPelanggan}</span>
+        </div>
+        <span class="riwayat-total">${formatRupiah(trx.total)}</span>
+        ${dibatalkan
+          ? `<span class="status-badge batal">${labelAlasan}</span>`
+          : `<button class="btn-void" onclick="bukaVoidModal('${trx.id}')">Batalkan</button>`}
+      </div>`;
+    }).join('');
+  }
+
+  function bukaVoidModal(id) {
+    trxDipilihUntukBatal = id;
+    const modal = document.getElementById('void-modal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+  }
+  function tutupVoidModal() {
+    document.getElementById('void-modal').style.display = 'none';
+    trxDipilihUntukBatal = null;
+  }
+
+  function konfirmasiBatal(alasan) {
+    if (!trxDipilihUntukBatal) return;
+    batalkanTransaksi(trxDipilihUntukBatal, alasan);
+    tutupVoidModal();
+  }
+
+  function batalkanTransaksi(id, alasan) {
+    const list = getTransactions();
+    const trx = list.find(t => t.id === id);
+    if (!trx || trx.status === 'dibatalkan') return;
+
+    trx.status = 'dibatalkan';
+    trx.alasan_batal = alasan;
+
+    // Kembalikan stok lokal
+    const produk = getProducts();
+    trx.items.forEach(item => {
+      const p = produk.find(pr => pr.nama === item.nama_produk);
+      if (p) p.stok += item.qty;
+    });
+    saveProducts(produk);
+
+    if (trx.status_sinkron === 'tersinkron') {
+      // Transaksi sudah tercatat di spreadsheet, kirim entri kompensasi (qty negatif)
+      // supaya rumus Keluar/Total Akhir di sheet ikut terkoreksi otomatis.
+      list.push({
+        id: 'void_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        waktu: new Date().toISOString(),
+        tipe: 'void',
+        referensi_id: trx.id,
+        status_toko: alasan === 'retur' ? 'RETUR' : 'BATAL',
+        subtotal: 0, diskon: 0, total: 0, uang_dibayar: 0, kembalian: 0,
+        status_sinkron: 'belum_sinkron',
+        items: trx.items.map(item => ({
+          nama_produk: item.nama_produk,
+          qty: -item.qty,
+          harga_satuan: item.harga_satuan,
+          subtotal: -item.subtotal,
+        })),
+      });
+    } else {
+      // Belum sempat terkirim sama sekali, cukup jangan pernah dikirim.
+      trx.status_sinkron = 'tersinkron';
+    }
+
+    saveTransactions(list);
+    renderRiwayat();
+    renderDashboard();
+    renderProducts();
+    tampilkanToast(alasan === 'retur' ? 'Retur dicatat, stok dikembalikan' : 'Transaksi dibatalkan');
+    cobaSinkron();
   }
 </script>
 </body>
