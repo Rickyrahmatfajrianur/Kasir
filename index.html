@@ -219,22 +219,29 @@
   /* ---------- Riwayat ---------- */
   .riwayat-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   .riwayat-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-y: auto; box-shadow: var(--shadow-sm); }
-  .riwayat-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 16px 20px; border-bottom: 1px solid #F0F2F6; gap: 14px;
-  }
+  .riwayat-row { border-bottom: 1px solid #F0F2F6; padding: 14px 20px; }
   .riwayat-row:last-child { border-bottom: none; }
   .riwayat-row.void { opacity: .55; }
+  .riwayat-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 8px; }
   .riwayat-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .riwayat-time { font-size: 12px; color: var(--text-muted); }
-  .riwayat-items { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .riwayat-total { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .riwayat-customer { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .riwayat-total { font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .riwayat-items-list { display: flex; flex-direction: column; gap: 6px; }
+  .riwayat-item-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-sm); background: var(--bg);
+  }
+  .riwayat-item-row.item-void { opacity: .5; }
+  .riwayat-item-row.item-void .riwayat-item-name { text-decoration: line-through; }
+  .riwayat-item-name { font-size: 13px; font-weight: 500; }
+  .riwayat-item-detail { font-size: 12px; color: var(--text-muted); }
   .status-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; white-space: nowrap; }
   .status-badge.batal { background: var(--warning-tint); color: var(--warning); }
   .btn-void {
-    font-size: 12px; font-weight: 600; color: var(--warning); background: var(--warning-tint);
-    border: none; padding: 8px 13px; border-radius: var(--radius-sm); cursor: pointer;
-    white-space: nowrap; transition: background .15s ease;
+    font-size: 11px; font-weight: 600; color: var(--warning); background: var(--warning-tint);
+    border: none; padding: 6px 11px; border-radius: var(--radius-sm); cursor: pointer;
+    white-space: nowrap; transition: background .15s ease; flex-shrink: 0;
   }
   .btn-void:hover { background: #F0DACB; }
   .void-reason-btn {
@@ -549,11 +556,24 @@
     let berubah = false;
     for (const trx of list) {
       if (trx.status_sinkron === 'tersinkron') continue;
+
+      // Untuk transaksi normal (bukan entri kompensasi void), kirim hanya item yang masih aktif.
+      const itemUntukDikirim = trx.tipe === 'void'
+        ? trx.items
+        : trx.items.filter(item => item.status !== 'dibatalkan');
+
+      if (itemUntukDikirim.length === 0) {
+        // Semua item sudah dibatalkan sebelum sempat terkirim, tidak perlu dikirim sama sekali.
+        trx.status_sinkron = 'tersinkron';
+        berubah = true;
+        continue;
+      }
+
       try {
         const res = await fetch(s.url, {
           method: 'POST',
           headers: {'Content-Type': 'text/plain'},
-          body: JSON.stringify(Object.assign({}, trx, {key: s.key, status: trx.status_toko || 'LUNAS'})),
+          body: JSON.stringify(Object.assign({}, trx, {key: s.key, status: trx.status_toko || 'LUNAS', items: itemUntukDikirim})),
         });
         if (res.ok) { trx.status_sinkron = 'tersinkron'; berubah = true; }
       } catch (err) { /* coba lagi nanti */ }
@@ -688,6 +708,7 @@
       qty: cart[nama].qty,
       harga_satuan: cart[nama].harga,
       subtotal: cart[nama].harga * cart[nama].qty,
+      status: 'aktif',
     }));
     const subtotal = hitungSubtotal();
     const diskon = Math.max(0, Number(document.getElementById('discount-input').value) || 0);
@@ -769,8 +790,11 @@
     let omzet = 0;
     const produkMap = {};
     todayTrx.forEach(trx => {
-      omzet += trx.total;
-      trx.items.forEach(item => {
+      const itemAktif = trx.items.filter(item => item.status !== 'dibatalkan');
+      const semuaAktif = itemAktif.length === trx.items.length;
+      const subtotalAktif = itemAktif.reduce((sum, item) => sum + item.subtotal, 0);
+      omzet += Math.max(0, subtotalAktif - (semuaAktif ? (trx.diskon || 0) : 0));
+      itemAktif.forEach(item => {
         if (!produkMap[item.nama_produk]) produkMap[item.nama_produk] = {qty: 0, harga: item.harga_satuan, total: 0};
         produkMap[item.nama_produk].qty += item.qty;
         produkMap[item.nama_produk].total += item.subtotal;
@@ -797,8 +821,6 @@
   }
 
   // ---------- Riwayat & pembatalan/retur ----------
-  let trxDipilihUntukBatal = null;
-
   function renderRiwayat() {
     const list = getTransactions();
     const today = new Date();
@@ -816,26 +838,41 @@
     panel.innerHTML = todayTrx.map(trx => {
       const waktu = new Date(trx.waktu);
       const jam = waktu.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
-      const ringkasanItem = trx.items.map(i => i.qty + 'x ' + i.nama_produk).join(', ');
-      const infoPelanggan = trx.customer ? (' &middot; ' + trx.customer) : '';
-      const dibatalkan = trx.status === 'dibatalkan';
-      const labelAlasan = trx.alasan_batal === 'retur' ? 'Retur' : 'Dibatalkan';
+      const trxDibatalkan = trx.status === 'dibatalkan';
 
-      return `<div class="riwayat-row ${dibatalkan ? 'void' : ''}">
-        <div class="riwayat-info">
-          <span class="riwayat-time">${jam}</span>
-          <span class="riwayat-items">${ringkasanItem}${infoPelanggan}</span>
+      const itemRowsHtml = trx.items.map((item, idx) => {
+        const itemDibatalkan = item.status === 'dibatalkan';
+        const labelAlasan = item.alasan_batal === 'retur' ? 'Retur' : 'Dibatalkan';
+        return `<div class="riwayat-item-row ${itemDibatalkan ? 'item-void' : ''}">
+          <div>
+            <div class="riwayat-item-name">${item.nama_produk}</div>
+            <div class="riwayat-item-detail">${item.qty} x ${formatRupiah(item.harga_satuan)} = ${formatRupiah(item.subtotal)}</div>
+          </div>
+          ${itemDibatalkan
+            ? `<span class="status-badge batal">${labelAlasan}</span>`
+            : `<button class="btn-void" onclick="bukaVoidModal('${trx.id}', ${idx})">Batalkan</button>`}
+        </div>`;
+      }).join('');
+
+      return `<div class="riwayat-row ${trxDibatalkan ? 'void' : ''}">
+        <div class="riwayat-header">
+          <div class="riwayat-info">
+            <span class="riwayat-time">${jam}</span>
+            ${trx.customer ? `<span class="riwayat-customer">${trx.customer}</span>` : ''}
+          </div>
+          <span class="riwayat-total">${formatRupiah(trx.total)}</span>
         </div>
-        <span class="riwayat-total">${formatRupiah(trx.total)}</span>
-        ${dibatalkan
-          ? `<span class="status-badge batal">${labelAlasan}</span>`
-          : `<button class="btn-void" onclick="bukaVoidModal('${trx.id}')">Batalkan</button>`}
+        <div class="riwayat-items-list">${itemRowsHtml}</div>
       </div>`;
     }).join('');
   }
 
-  function bukaVoidModal(id) {
-    trxDipilihUntukBatal = id;
+  let trxDipilihUntukBatal = null;
+  let itemIndexDipilihUntukBatal = null;
+
+  function bukaVoidModal(trxId, itemIndex) {
+    trxDipilihUntukBatal = trxId;
+    itemIndexDipilihUntukBatal = itemIndex;
     const modal = document.getElementById('void-modal');
     modal.style.display = 'flex';
     modal.classList.add('show');
@@ -843,58 +880,63 @@
   function tutupVoidModal() {
     document.getElementById('void-modal').style.display = 'none';
     trxDipilihUntukBatal = null;
+    itemIndexDipilihUntukBatal = null;
   }
 
   function konfirmasiBatal(alasan) {
-    if (!trxDipilihUntukBatal) return;
-    batalkanTransaksi(trxDipilihUntukBatal, alasan);
+    if (!trxDipilihUntukBatal || itemIndexDipilihUntukBatal === null) return;
+    batalkanItemTransaksi(trxDipilihUntukBatal, itemIndexDipilihUntukBatal, alasan);
     tutupVoidModal();
   }
 
-  function batalkanTransaksi(id, alasan) {
+  function batalkanItemTransaksi(trxId, itemIndex, alasan) {
     const list = getTransactions();
-    const trx = list.find(t => t.id === id);
-    if (!trx || trx.status === 'dibatalkan') return;
+    const trx = list.find(t => t.id === trxId);
+    if (!trx) return;
+    const item = trx.items[itemIndex];
+    if (!item || item.status === 'dibatalkan') return;
 
-    trx.status = 'dibatalkan';
-    trx.alasan_batal = alasan;
+    item.status = 'dibatalkan';
+    item.alasan_batal = alasan;
 
-    // Kembalikan stok lokal
+    // Kembalikan stok lokal untuk produk ini saja
     const produk = getProducts();
-    trx.items.forEach(item => {
-      const p = produk.find(pr => pr.nama === item.nama_produk);
-      if (p) p.stok += item.qty;
-    });
+    const p = produk.find(pr => pr.nama === item.nama_produk);
+    if (p) p.stok += item.qty;
     saveProducts(produk);
 
+    // Kalau semua item dalam transaksi ini sudah dibatalkan, tandai transaksinya juga
+    const semuaDibatalkan = trx.items.every(it => it.status === 'dibatalkan');
+    if (semuaDibatalkan) trx.status = 'dibatalkan';
+
     if (trx.status_sinkron === 'tersinkron') {
-      // Transaksi sudah tercatat di spreadsheet, kirim entri kompensasi (qty negatif)
-      // supaya rumus Keluar/Total Akhir di sheet ikut terkoreksi otomatis.
+      // Produk ini sudah tercatat di spreadsheet, kirim entri kompensasi (qty negatif)
+      // hanya untuk produk ini, supaya rumus stok di sheet ikut terkoreksi otomatis.
       list.push({
         id: 'void_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
         waktu: new Date().toISOString(),
         tipe: 'void',
         referensi_id: trx.id,
+        customer: trx.customer || '',
         status_toko: alasan === 'retur' ? 'RETUR' : 'BATAL',
         subtotal: 0, diskon: 0, total: 0, uang_dibayar: 0, kembalian: 0,
         status_sinkron: 'belum_sinkron',
-        items: trx.items.map(item => ({
+        items: [{
           nama_produk: item.nama_produk,
           qty: -item.qty,
           harga_satuan: item.harga_satuan,
           subtotal: -item.subtotal,
-        })),
+        }],
       });
-    } else {
-      // Belum sempat terkirim sama sekali, cukup jangan pernah dikirim.
-      trx.status_sinkron = 'tersinkron';
     }
+    // Kalau transaksi induk belum sempat sinkron sama sekali, tidak perlu kompensasi apa pun —
+    // saat sinkron nanti, item yang sudah dibatalkan otomatis tidak ikut dikirim.
 
     saveTransactions(list);
     renderRiwayat();
     renderDashboard();
     renderProducts();
-    tampilkanToast(alasan === 'retur' ? 'Retur dicatat, stok dikembalikan' : 'Transaksi dibatalkan');
+    tampilkanToast(alasan === 'retur' ? 'Retur dicatat, stok dikembalikan' : 'Produk dibatalkan');
     cobaSinkron();
   }
 </script>
