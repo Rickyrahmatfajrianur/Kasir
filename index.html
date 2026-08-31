@@ -118,11 +118,27 @@
     outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-tint);
   }
   #search-input {
-    width: 100%; height: 64px; padding-left: 56px; margin-bottom: 18px;
-    font-size: 18px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
-    border-width: 2px;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="%239AA1AC" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>');
-    background-repeat: no-repeat; background-position: 18px center;
+    width: 100%; height: 60px; padding-left: 52px; margin: 0;
+    font-size: 17px; border: none; box-shadow: none; background: transparent;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="%239AA1AC" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>');
+    background-repeat: no-repeat; background-position: 16px center;
+  }
+  #search-input:focus { box-shadow: none; }
+  .search-floating {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 6px 20px rgba(16,24,40,0.10), 0 1px 3px rgba(16,24,40,0.06);
+    border: 1px solid var(--border);
+    padding: 2px;
+    margin-bottom: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    transition: box-shadow .2s ease;
+  }
+  .search-floating:focus-within {
+    box-shadow: 0 10px 28px rgba(20,112,224,0.18), 0 0 0 3px var(--primary-tint);
+    border-color: var(--primary);
   }
 
   .categories { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -349,7 +365,9 @@
 
     <div class="screen active" id="screen-penjualan">
       <div class="products-col">
-        <input type="text" id="search-input" placeholder="Ketik nama produk..." oninput="renderProducts()">
+        <div class="search-floating">
+          <input type="text" id="search-input" placeholder="Ketik nama produk..." oninput="renderProducts()">
+        </div>
         <div class="categories" id="category-chips"></div>
         <div class="section-label">Diurutkan sesuai abjad</div>
         <div class="product-grid" id="product-grid"></div>
